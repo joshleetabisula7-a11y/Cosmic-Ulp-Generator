@@ -1,90 +1,1068 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Logs Search</title>
-  <style>
-    body{font-family:system-ui,Arial;padding:18px}
-    pre{white-space:pre-wrap}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Logs Search — Key Protected (Light)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f7fafc; --surface: #ffffff; --muted: #64748b; --text: #0f1724;
+    --accent-start: #4f46e5; --accent-end: #06b6d4; --pill: #eef2ff; --chip-bg: #f1f5f9;
+    --chip-border: rgba(12,18,30,0.06); --soft-shadow: 0 8px 28px rgba(14,20,30,0.06);
+    --danger: #fff1f2; --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+  }
+  .theme-dark{ --bg:#0b1220; --surface:#0f1724; --muted:#9aa7be; --text:#e6eef8; --accent-start:#7c3aed; --accent-end:#06b6d4; --pill:#0b2230; --chip-bg: rgba(255,255,255,0.02); --chip-border: rgba(255,255,255,0.03); --soft-shadow: 0 10px 30px rgba(2,6,23,0.6); --danger:#ffebe8; }
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:var(--text)}
+  body{background:var(--bg);padding:26px;box-sizing:border-box}
+  .container{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start}
+  .header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  h1{font-size:20px;margin:0}
+  .sub{color:var(--muted);font-size:13px}
+  .card{ background:var(--surface); border-radius:14px; padding:18px; box-shadow:var(--soft-shadow); border:1px solid rgba(15,23,42,0.04); }
+  .card h3{margin:0 0 8px 0;font-size:15px}
+  .muted{color:var(--muted);font-size:13px}
+  .note{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .status-pill{display:inline-block;padding:7px 12px;border-radius:999px;background:var(--pill);font-weight:700;color:var(--text);font-size:13px}
+  .kw-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .kw-row label{ display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:12px;background:var(--chip-bg); border:1px solid var(--chip-border);cursor:pointer;font-size:13px;color:var(--text); box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset; }
+  .kw-row label .removeKw{display:inline-flex;align-items:center;justify-content:center;margin-left:8px;padding:3px 6px;border-radius:8px;background:transparent;color:var(--muted);font-weight:700;cursor:pointer;font-size:12px}
+  .form-label{display:block;margin-top:14px;font-weight:600;font-size:13px;color:var(--text)}
+  input[type="number"], input[type="password"], select, input[type="text"], .file-chip{ width:100%;padding:11px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);margin-top:8px;font-size:14px;background:transparent;color:var(--text); }
+  input::placeholder{color: #94a3b8}
+  .file-chip{display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .controls{display:flex;gap:10px;margin-top:14px;align-items:center;flex-wrap:wrap}
+  .btn-primary{ background:linear-gradient(90deg,var(--accent-start),var(--accent-end));border:none;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700; box-shadow: 0 6px 18px rgba(79,70,229,0.12); }
+  .btn-ghost{ background:transparent;border:1px solid rgba(15,23,42,0.06);padding:10px 12px;border-radius:10px;cursor:pointer;color:var(--text) }
+  .hidden{display:none}
+  .small-note{font-size:12px;color:var(--muted);margin-top:8px}
+  .results-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .results-body{ min-height:260px;max-height:560px;overflow:auto;border-radius:10px;padding:14px;background:linear-gradient(180deg,rgba(250,250,250,0.6),transparent); border:1px solid rgba(15,23,42,0.04);font-family:var(--mono);font-size:13px;color:var(--text); }
+  .footer{margin-top:14px;display:flex;align-items:center;gap:12px}
+  a.tg-btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;background:rgba(0,136,204,0.06);padding:8px 10px;border-radius:10px;color:var(--text);border:1px solid rgba(0,0,0,0.04)}
+  .inlineLoader{display:inline-flex;gap:8px;align-items:center}
+  .pulseDot{width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(0,0,0,0.08)}
+  .errorBox{background:var(--danger);padding:10px;border-radius:8px;color:#9b1b00;font-size:13px}
+  pre{white-space:pre-wrap;word-break:break-all;margin:0;font-family:var(--mono)}
+  #overlay{ position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:50;transition:background .18s ease; background: rgba(15,23,42,0.06); }
+  #overlay.hidden{display:none}
+  #overlay .box{Background:var(--surface);padding:18px;border-radius:12px;max-width:520px;width:92%;box-shadow:var(--soft-shadow)}
+  .modal{ position:fixed;inset:0;background:rgba(15,23,42,0.06);display:flex;align-items:center;justify-content:center;z-index:70;}
+  .modal.hidden{display:none}
+  .modal .box{ max-width:720px;width:94%;max-height:84vh;overflow:auto;padding:18px;border-radius:12px; box-shadow:var(--soft-shadow); }
+  .info-line{font-size:13px;color:var(--text);background:#f1f5f9;padding:8px;border-radius:8px;margin-top:10px}
+  .masked{letter-spacing:2px;opacity:0.95;font-family:var(--mono)}
+  @media (max-width:920px){ .container{grid-template-columns:1fr;} .header{flex-direction:column;gap:6px} .controls{flex-direction:column;align-items:stretch} }
+  button, select, input { touch-action: manipulation; }
+</style>
 </head>
 <body>
-  <h1>Logs Search (example)</h1>
+  <div class="container" id="app">
+    <div class="header">
+      <div>
+        <h1>Logs Search — Light Mode</h1>
+        <div class="sub">Private search — runs locally on <code>logs.txt</code> (upload a file to search locally).</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div id="topStatus" class="status-pill">idle</div>
+        <button id="openSettings" class="settings-btn btn-ghost" title="Open settings">⚙ Settings</button>
+      </div>
+    </div>
 
-  <div>
-    <label>Keywords (comma): <input id="kw" value="error,login" style="width:60%"></label>
+    <!-- LEFT: controls -->
+    <div class="card" id="leftPanel">
+      <h3>Key status</h3>
+      <div id="keyInfo">
+        <div id="keyMsg" class="muted">Locked — enter your key to unlock features.</div>
+        <div style="margin-top:10px;display:flex;gap:8px">
+          <button id="relockBtn" class="btn-ghost hidden">Relock</button>
+          <button id="reloadKeysBtn" class="btn-ghost">Reload keys.txt</button>
+        </div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid rgba(15,23,42,0.04);margin:14px 0">
+
+      <h3>Search settings</h3>
+      <div class="muted">Choose keywords (search runs locally on logs.txt). Already-provided outputs are automatically ignored.</div>
+
+      <div class="kw-row" id="kwRow">
+        <label><input class="kw" type="checkbox" value="mtacc"> mtacc</label>
+        <label><input class="kw" type="checkbox" value="roblox.com"> roblox</label>
+        <label><input class="kw" type="checkbox" value="garena.com"> garena.com</label>
+        <label><input class="kw" type="checkbox" value="facebook.com"> facebook.com</label>
+        <label><input class="kw" type="checkbox" value="crunchyroll.com"> Crunchyroll</label>
+        <label><input class="kw" type="checkbox" value="netease.com"> netease.com</label>
+        <label><input class="kw" type="checkbox" value="expressvpn.com"> expressvpn.com</label>
+        <label><input class="kw" type="checkbox" value="tiktok.com"> tiktok.com</label>
+      </div>
+
+      <label class="form-label">Add your own keyword</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="customKwInput" type="text" placeholder="e.g. example.com, invoice, username" />
+        <button id="addKwBtn" class="btn-primary">Add</button>
+      </div>
+      <div class="small-note">Custom keywords are saved locally (persist between reloads). Remove a custom keyword by clicking the ✕ on the chip.</div>
+
+      <label class="form-label">Email filter</label>
+      <select id="emailFilter" title="Filter by presence of email">
+        <option value="mix">Mix (email or without email)</option>
+        <option value="email_only">Email only</option>
+        <option value="without_email">Without email</option>
+      </select>
+
+      <label class="form-label">Lines limit</label>
+      <input id="lineLimit" type="number" min="1" max="500" value="50" />
+
+      <div style="margin-top:12px">
+        <label class="form-label">Source logs (optional)</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="fileInput" type="file" accept=".txt" />
+          <div class="small-note">If not provided, the app will try to fetch <code>logs.txt</code> from origin.</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="searchBtn" class="btn-primary" disabled>Search <span id="searchInlineLoader" class="inlineLoader hidden"><span class="pulseDot"></span><span id="searchInlineText">Searching…</span></span></button>
+        <button id="downloadBtn" class="btn-ghost" disabled>Download results</button>
+        <button id="clearProvidedBtn" class="btn-ghost">Clear provided</button>
+      </div>
+
+      <div class="small-note" style="margin-top:12px">Tip: For local testing run <code>python -m http.server 8000</code></div>
+    </div>
+
+    <!-- RIGHT: results -->
+    <div>
+      <div class="card results-card">
+        <div class="results-head">
+          <strong style="font-size:15px">Results</strong>
+          <div id="resultsMeta" class="muted">no results</div>
+        </div>
+        <div id="results" class="results-body">Results will appear here after searching.</div>
+      </div>
+
+      <div class="footer">
+        <a class="tg-btn" id="tgLink" href="https://t.me/MercyNot" target="_blank" rel="noopener noreferrer" aria-label="Open Telegram @MercyNot">
+          <svg viewBox="0 0 240 240" width="18" height="18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="120" cy="120" r="120" fill="#0088cc"/>
+            <path d="M48 122l144-44c6-2 6 4 2 7L84 152c-4 3-8 7-3 11 5 4 10 1 12-1l34-26 50 34c5 3 9 2 13-3 3-5 6-25 7-37 1-12-2-17-7-17L66 141c-6 0-8 4-6 9z" fill="#fff"/>
+          </svg>
+          <span>@MercyNot</span>
+        </a>
+        <div id="errorBox" class="errorBox hidden" style="margin-left:auto"></div>
+      </div>
+    </div>
   </div>
-  <div>
-    <label>Limit: <input id="limit" type="number" value="10" min="1" max="500"></label>
-    <button id="search">Search</button>
-    <button id="syncProvided">Sync provided.txt</button>
+
+  <!-- Lock overlay -->
+  <div id="overlay" aria-hidden="false" class="">
+    <div class="box" role="dialog" aria-modal="true">
+      <h3 style="margin:0 0 8px 0">Access check</h3>
+      <div class="muted">Enter your access key to continue. For local testing, enable "Local test mode".</div>
+
+      <div style="margin-top:12px">
+        <label class="form-label">Access Key</label>
+        <input id="overlayKeyInput" type="password" placeholder="Paste your key here" autocomplete="new-password" />
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+        <button id="overlaySubmitBtn" class="btn-primary">Unlock</button>
+        <button id="overlayReloadBtn" class="btn-ghost">Reload keys.txt</button>
+        <label style="display:inline-flex;align-items:center;gap:8px;margin-left:auto">
+          <input id="localTestToggle" type="checkbox" /> <span class="muted">Local test mode</span>
+        </label>
+      </div>
+
+      <div id="overlayMsg" class="muted" style="margin-top:12px;min-height:20px;text-align:center"></div>
+      <div class="small-note">Tip: For local testing run <code>python -m http.server 8000</code>. Place <code>keys.txt</code> at the site root for production.</div>
+    </div>
   </div>
 
-  <h3>Results</h3>
-  <div id="results"><em>No results yet</em></div>
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal hidden" aria-hidden="true">
+    <div class="box card" role="dialog" aria-modal="true" aria-label="Settings">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Settings</h3>
+        <button id="closeSettings" class="btn-ghost">Close</button>
+      </div>
+      <div style="margin-top:12px">
+        <label class="form-label">Theme</label>
+        <select id="settingTheme">
+          <option value="auto">Auto (system)</option>
+          <option value="light">Light (recommended)</option>
+          <option value="dark">Dark</option>
+        </select>
 
-  <script>
-    async function fetchLogs(){
-      const r = await fetch('/logs.txt', {cache:'no-store'});
-      if(!r.ok) throw new Error('logs fetch failed '+r.status);
-      return await r.text();
+        <label class="form-label">Default results per search</label>
+        <input id="settingResultsPerSearch" type="number" min="5" max="300" value="50"/>
+
+        <label class="form-label">Auto-unlock with saved key</label>
+        <select id="settingAutoUnlock">
+          <option value="1">Enabled</option>
+          <option value="0">Disabled</option>
+        </select>
+
+        <label class="form-label">Show timestamps next to results</label>
+        <select id="settingShowTimestamps">
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </select>
+
+        <label class="form-label">Use shared provided.txt (try to fetch provided.txt)</label>
+        <select id="settingUseSharedProvided">
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </select>
+
+        <label class="form-label">Upload results as provided on finish (best-effort)</label>
+        <select id="settingUploadProvidedOnFinish">
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+        </select>
+
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button id="exportSettings" class="btn-ghost">Export settings</button>
+          <button id="importSettings" class="btn-ghost">Import settings</button>
+          <input id="importFile" type="file" accept="application/json" class="hidden"/>
+          <button id="resetSettings" class="btn-ghost">Reset to defaults</button>
+        </div>
+
+        <div class="small-note" style="margin-top:12px">Settings are saved locally (localStorage) and applied immediately.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ----------------- Elements ----------------- */
+const els = {
+  overlay: document.getElementById('overlay'),
+  overlayInput: document.getElementById('overlayKeyInput'),
+  overlayMsg: document.getElementById('overlayMsg'),
+  overlaySubmit: document.getElementById('overlaySubmitBtn'),
+  overlayReload: document.getElementById('overlayReloadBtn'),
+  reloadKeysBtn: document.getElementById('reloadKeysBtn'),
+  relockBtn: document.getElementById('relockBtn'),
+  keyMsg: document.getElementById('keyMsg'),
+  searchBtn: document.getElementById('searchBtn'),
+  searchLoader: document.getElementById('searchInlineLoader'),
+  results: document.getElementById('results'),
+  resultsMeta: document.getElementById('resultsMeta'),
+  downloadBtn: document.getElementById('downloadBtn'),
+  clearProvidedBtn: document.getElementById('clearProvidedBtn'),
+  fileInput: document.getElementById('fileInput'),
+  lineLimit: document.getElementById('lineLimit'),
+  emailFilter: document.getElementById('emailFilter'),
+  topStatus: document.getElementById('topStatus'),
+  errorBox: document.getElementById('errorBox'),
+  openSettingsBtn: document.getElementById('openSettings'),
+  settingsModal: document.getElementById('settingsModal'),
+  closeSettingsBtn: document.getElementById('closeSettings'),
+  settingTheme: document.getElementById('settingTheme'),
+  settingResultsPerSearch: document.getElementById('settingResultsPerSearch'),
+  settingAutoUnlock: document.getElementById('settingAutoUnlock'),
+  settingShowTimestamps: document.getElementById('settingShowTimestamps'),
+  exportSettingsBtn: document.getElementById('exportSettings'),
+  importSettingsBtn: document.getElementById('importSettings'),
+  importSettingsInput: document.getElementById('importFile'),
+  resetSettingsBtn: document.getElementById('resetSettings'),
+  localTestToggle: document.getElementById('localTestToggle'),
+  kwRow: document.getElementById('kwRow'),
+  customKwInput: document.getElementById('customKwInput'),
+  addKwBtn: document.getElementById('addKwBtn'),
+  settingUseSharedProvided: document.getElementById('settingUseSharedProvided'),
+  settingUploadProvidedOnFinish: document.getElementById('settingUploadProvidedOnFinish'),
+};
+
+let keysList = [];
+let unlockedKey = null;
+let resultsSet = [];
+let worker = null;
+let searching = false;
+
+/* ----------------- dedupe & persistence ----------------- */
+const SEEN_KEY = 'logs_search_seen_lines_v1'; // persistent seen on device
+const LAST_RESULTS_KEY = 'logs_search_last_results_v1';
+let globalSeen = new Set();       // will include persisted + provided.txt contents
+let sessionAppended = new Set();  // lines appended during this session
+let currentLimit = 0;
+let stopRequested = false;
+
+/* ----------------- DEFAULT SETTINGS ----------------- */
+const SETTINGS_KEY = 'logs_search_settings_v1';
+const CUSTOM_KW_KEY = 'logs_search_custom_keywords_v1';
+const DEFAULT_SETTINGS = { theme: 'light', resultsPerSearch: 50, autoUnlock: true, showTimestamps: false, useSharedProvided: true, uploadProvidedOnFinish: false };
+const HARD_MAX_LINES = 500;
+let settings = loadSettings();
+
+/* ---------- helpers ---------- */
+function applyTheme(){
+  const body = document.body;
+  if(settings.theme === 'auto'){
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    body.classList.toggle('theme-dark', prefersDark);
+  } else {
+    body.classList.toggle('theme-dark', settings.theme === 'dark');
+  }
+}
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed.resultsPerSearch && Number(parsed.resultsPerSearch) > HARD_MAX_LINES) parsed.resultsPerSearch = HARD_MAX_LINES;
+      // normalize booleans that might be stored as 0/1
+      if(typeof parsed.useSharedProvided === 'undefined') parsed.useSharedProvided = DEFAULT_SETTINGS.useSharedProvided;
+      if(typeof parsed.uploadProvidedOnFinish === 'undefined') parsed.uploadProvidedOnFinish = DEFAULT_SETTINGS.uploadProvidedOnFinish;
+      return Object.assign({}, DEFAULT_SETTINGS, parsed);
     }
+  }catch(e){ console.warn('Failed to parse settings', e); }
+  return Object.assign({}, DEFAULT_SETTINGS);
+}
+function saveSettings(){
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  applyTheme();
+  if(els.settingTheme) els.settingTheme.value = settings.theme;
+  if(els.settingResultsPerSearch) els.settingResultsPerSearch.value = settings.resultsPerSearch;
+  if(els.settingAutoUnlock) els.settingAutoUnlock.value = settings.autoUnlock ? '1' : '0';
+  if(els.settingShowTimestamps) els.settingShowTimestamps.value = settings.showTimestamps ? '1' : '0';
+  if(els.settingUseSharedProvided) els.settingUseSharedProvided.value = settings.useSharedProvided ? '1' : '0';
+  if(els.settingUploadProvidedOnFinish) els.settingUploadProvidedOnFinish.value = settings.uploadProvidedOnFinish ? '1' : '0';
+}
 
-    function matchLines(text, keywords){
-      const lines = text.split(/\\r?\\n/).map(s=>s.trim()).filter(Boolean);
-      const kw = keywords.map(k=>k.trim().toLowerCase()).filter(Boolean);
-      return lines.filter(l=>{
-        if(kw.length===0) return true;
-        const low = l.toLowerCase();
-        return kw.some(k => low.includes(k));
-      });
+/* UI helper */
+function setStatus(text){ els.topStatus.textContent = text; }
+function showError(msg){ els.errorBox.textContent = msg; els.errorBox.classList.remove('hidden'); setTimeout(()=>els.errorBox.classList.add('hidden'), 7000); }
+function notifyOverlay(msg){ els.overlayMsg.textContent = msg; setTimeout(()=>els.overlayMsg.textContent = '', 3000); }
+function maskKey(k){ if(!k) return ''; if(k.length<=6) return '*'.repeat(k.length); return k.slice(0,3) + '...' + k.slice(-3); }
+
+/* ----------------- Key parsing & loader (unchanged) ----------------- */
+function parseExpiryToken(s){
+  if(!s) return null;
+  const m = s.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return null;
+  const y = Number(m[1]), mo = Number(m[2]) - 1, d = Number(m[3]);
+  const dt = new Date(y, mo, d, 23, 59, 59, 999);
+  if(isNaN(dt.getTime())) return null;
+  return dt;
+}
+function parseKeyLine(line){
+  if(typeof line !== 'string') return null;
+  if(line.charCodeAt(0) === 0xFEFF) line = line.slice(1);
+  line = line.trim();
+  if(!line) return null;
+  let parts = line.split('|').map(s=>s.trim()).filter(Boolean);
+  let key = parts[0], expires = null;
+  if(parts.length >= 2){
+    expires = parseExpiryToken(parts[1]) || null;
+    if(!expires){
+      const match = parts[1].match(/(\d{4}-\d{2}-\d{2})/);
+      if(match) expires = parseExpiryToken(match[1]);
     }
-
-    async function claimLines(candidates, limit){
-      const r = await fetch('/claim', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ lines: candidates, limit })
-      });
-      if(!r.ok) return { claimed: [], rejected: candidates };
-      const json = await r.json();
-      return { claimed: json.claimed || [], rejected: json.rejected || [] };
-    }
-
-    document.getElementById('search').addEventListener('click', async ()=>{
-      try{
-        document.getElementById('results').textContent = 'Searching...';
-        const txt = await fetchLogs();
-        const kws = (document.getElementById('kw').value || '').split(',').map(s=>s.trim()).filter(Boolean);
-        const candidates = matchLines(txt, kws);
-        if(candidates.length === 0){
-          document.getElementById('results').textContent = 'No matches';
-          return;
+  } else {
+    const match = line.match(/(\d{4}-\d{2}-\d{2})/);
+    if(match){
+      expires = parseExpiryToken(match[1]);
+      key = line.replace(match[1],'').trim();
+    } else {
+      const ws = line.split(/\s+/);
+      if(ws.length >= 2){
+        const last = ws[ws.length-1];
+        const pd = parseExpiryToken(last);
+        if(pd){
+          expires = pd;
+          ws.pop();
+          key = ws.join(' ').trim();
         }
-        const limit = Number(document.getElementById('limit').value) || 10;
-        const {claimed, rejected} = await claimLines(candidates, limit);
-        // show claimed only
-        if(claimed.length === 0){
-          document.getElementById('results').textContent = 'No unclaimed lines available (all were claimed by others)';
-        } else {
-          document.getElementById('results').innerHTML = '<pre>' + claimed.join('\\n') + '</pre>';
-        }
-      }catch(err){
-        document.getElementById('results').textContent = 'Error: ' + err.message;
       }
+    }
+  }
+  if((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))){
+    key = key.slice(1,-1).trim();
+  }
+  key = key.trim();
+  if(!key) return null;
+  return { key, expires, rawLine: line };
+}
+
+async function loadKeysTxt(){
+  keysList = [];
+  try{
+    const r = await fetch('keys.txt', {cache:'no-store'});
+    if(!r.ok) throw new Error('status '+r.status);
+    const txt = await r.text();
+    const lines = txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    for(const ln of lines){
+      const p = parseKeyLine(ln);
+      if(p) keysList.push(p);
+    }
+    return true;
+  }catch(e){
+    console.warn('No keys.txt served', e);
+    notifyOverlay('keys.txt not found on server (production). Enable Local test mode to unlock without server keys.');
+    return false;
+  }
+}
+
+/* ----------------- Unlock flow ----------------- */
+function isExpired(entry){
+  if(!entry || !entry.expires) return false;
+  return entry.expires.getTime() < Date.now();
+}
+
+async function tryUnlock(rawKey){
+  setStatus('checking key...');
+  const k = (rawKey || '').trim();
+  if(!k){ setStatus('locked'); notifyOverlay('Paste a key first'); return { success:false }; }
+  await loadKeysTxt().catch(()=>{});
+  if(keysList.length === 0){
+    if(els.localTestToggle.checked){
+      notifyOverlay('Unlocked (local testing mode)');
+      return { success:true, reason:'local_test' };
+    } else {
+      notifyOverlay('keys.txt not found — enable Local test mode to unlock without server keys');
+      return { success:false, reason:'no_keys' };
+    }
+  }
+  let found = keysList.find(e => e.key === k);
+  if(!found){
+    const norm = k.replace(/^[\uFEFF'"]+|[\uFEFF'"]+$/g,'').trim();
+    found = keysList.find(e => e.key.replace(/^[\uFEFF'"]+|[\uFEFF'"]+$/g,'').trim() === norm);
+  }
+  if(!found){
+    notifyOverlay('Incorrect Key Or Expired Please Renew again');
+    return { success:false, reason:'not_found' };
+  }
+  if(isExpired(found)){
+    const d = found.expires ? found.expires.toISOString().slice(0,10) : 'unknown';
+    notifyOverlay(`Key found but expired on ${d}`);
+    return { success:false, reason:'expired', entry:found };
+  }
+  const days = found.expires ? Math.ceil((found.expires.getTime() - Date.now())/(1000*60*60*24)) : null;
+  return { success:true, entry:found, daysRemaining:days };
+}
+
+function finishUnlock(key, info){
+  unlockedKey = key;
+  localStorage.setItem('unlockedKey_v1', key);
+  els.overlay.classList.add('hidden');
+  els.overlay.style.display = 'none';
+  els.keyMsg.textContent = `Access granted — ${maskKey(key)}${info && info.daysRemaining!=null ? ' ('+info.daysRemaining+' day(s))' : ''}`;
+  els.relockBtn.classList.remove('hidden');
+  els.searchBtn.disabled = false;
+  els.downloadBtn.disabled = true;
+  setStatus('unlocked');
+  els.openSettingsBtn.disabled = false;
+}
+
+/* ----------------- Overlay wiring ----------------- */
+els.overlayReload.addEventListener('click', async ()=>{
+  els.overlayReload.disabled = true;
+  const ok = await loadKeysTxt();
+  notifyOverlay(ok ? 'keys.txt reloaded' : 'keys.txt not found');
+  els.overlayReload.disabled = false;
+});
+els.reloadKeysBtn.addEventListener('click', async ()=>{ els.reloadKeysBtn.disabled = true; await loadKeysTxt(); notifyOverlay('keys.txt reloaded'); els.reloadKeysBtn.disabled = false; });
+
+els.overlaySubmit.addEventListener('click', async ()=>{
+  const v = els.overlayInput.value.trim();
+  if(!v){ notifyOverlay('Paste a key first'); return; }
+  const res = await tryUnlock(v);
+  if(res.success){
+    finishUnlock(v, res);
+    if(res.reason === 'local_test') notifyOverlay('Unlocked (local testing mode)');
+    else notifyOverlay('Unlocked');
+  }
+});
+
+els.relockBtn.addEventListener('click', ()=>{
+  unlockedKey = null;
+  localStorage.removeItem('unlockedKey_v1');
+  els.keyMsg.textContent = 'Locked — enter your key to unlock features.';
+  els.relockBtn.classList.add('hidden');
+  els.searchBtn.disabled = true;
+  els.overlay.classList.remove('hidden');
+  els.overlay.style.display = 'flex';
+  setStatus('locked');
+  els.openSettingsBtn.disabled = true;
+  closeSettingsModal();
+});
+
+/* ----------------- Worker (chunked processing) ----------------- */
+const workerCode = `
+let buffer = '';
+let emailRegex = /[\\w.+-]+@[\\w-]+\\.[\\w.-]+/;
+self.onmessage = function(ev){
+  const data = ev.data;
+  if(!data) return;
+  if(data.cmd === 'reset'){ buffer = ''; return; }
+  if(data.cmd === 'processChunk'){
+    try{
+      const text = data.textChunk || '';
+      buffer += text;
+      const lines = buffer.split(/\\r?\\n/);
+      buffer = lines.pop() || '';
+      const keywords = data.keywords || [];
+      const filter = data.emailFilter || 'mix';
+      const limit = data.lineLimit || 1000;
+      const matched = [];
+      for(let i=0;i<lines.length;i++){
+        const line = lines[i];
+        if(!line || line.trim().length === 0) continue;
+        const hasEmail = emailRegex.test(line);
+        if(filter === 'email_only' && !hasEmail) continue;
+        if(filter === 'without_email' && hasEmail) continue;
+        let ok = (keywords.length === 0);
+        for(let k of keywords){
+          if(line.toLowerCase().includes(k.toLowerCase())){ ok=true; break; }
+        }
+        if(ok) matched.push(line);
+        if(matched.length >= limit) break;
+      }
+      const batch = 60;
+      for(let i=0;i<matched.length;i+=batch){
+        self.postMessage({type:'result', lines: matched.slice(i, i+batch)});
+      }
+      self.postMessage({type:'progress', processed: data.chunkIndex || 0});
+    }catch(e){
+      self.postMessage({type:'error', message: e && e.message ? e.message : String(e)});
+    }
+  }
+};
+`;
+
+function createWorker(){
+  if(worker){ try{ worker.terminate(); }catch(e){} worker=null; }
+  const blob = new Blob([workerCode], {type:'application/javascript'});
+  const url = URL.createObjectURL(blob);
+  worker = new Worker(url);
+  worker.onmessage = (ev) => {
+    const d = ev.data;
+    if(!d) return;
+    if(d.type === 'result'){
+      if(stopRequested) return;
+      for(const ln of d.lines){
+        if(stopRequested) break;
+        const key = (ln || '').trim();
+        if(globalSeen.has(key)) continue;         // persistent/shared dedupe
+        if(sessionAppended.has(key)) continue;    // per-session dedupe
+        sessionAppended.add(key);
+        globalSeen.add(key);                      // also mark seen for this client
+        saveSeenToStorage();                      // persist the new seen lines
+        resultsSet.push(ln);
+        appendResultLine(ln);
+        if(resultsSet.length >= currentLimit){
+          stopRequested = true;
+          break;
+        }
+      }
+      els.resultsMeta.textContent = `${resultsSet.length} found`;
+      els.downloadBtn.disabled = (resultsSet.length===0);
+    } else if(d.type === 'progress'){
+      setStatus('searching (chunks: ' + (d.processed || '?') + ')');
+    } else if(d.type === 'error'){
+      showError('Worker error: ' + d.message);
+    }
+  };
+}
+
+/* ----------------- Results UI ----------------- */
+function appendResultLine(line){
+  if(els.results.textContent.trim() === 'Results will appear here after searching.'){
+    els.results.innerHTML = '';
+  }
+  const el = document.createElement('div');
+  el.style.padding = '6px 4px';
+  el.style.borderBottom = '1px dashed rgba(15,23,42,0.04)';
+  const tsPart = settings.showTimestamps ? '[' + new Date().toLocaleTimeString() + '] ' : '';
+  el.textContent = tsPart + line;
+  el.setAttribute('data-line', encodeURIComponent((line||'').trim()));
+  els.results.appendChild(el);
+}
+function clearResults(){
+  resultsSet = [];
+  els.results.innerHTML = 'Results will appear here after searching.';
+  els.resultsMeta.textContent = 'no results';
+  els.downloadBtn.disabled = true;
+  sessionAppended.clear();
+}
+
+/* ----------------- persistent seen storage ----------------- */
+function loadSeenFromStorage(){
+  try{
+    const raw = localStorage.getItem(SEEN_KEY);
+    if(!raw) return new Set();
+    const arr = JSON.parse(raw);
+    if(!Array.isArray(arr)) return new Set();
+    return new Set(arr.map(s => String(s).trim()).filter(Boolean));
+  }catch(e){ console.warn('Failed to read seen storage', e); return new Set(); }
+}
+function saveSeenToStorage(){
+  try{
+    const arr = Array.from(globalSeen);
+    localStorage.setItem(SEEN_KEY, JSON.stringify(arr));
+  }catch(e){ console.warn('Failed to save seen storage', e); }
+}
+
+/* ----------------- last results persistence (prevents re-show after refresh) ----------------- */
+function saveLastResults(){
+  try{
+    localStorage.setItem(LAST_RESULTS_KEY, JSON.stringify(resultsSet || []));
+  }catch(e){ console.warn('Failed to save last results', e); }
+}
+function loadLastResults(){
+  try{
+    const raw = localStorage.getItem(LAST_RESULTS_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.map(s => String(s).trim()).filter(Boolean) : [];
+  }catch(e){ console.warn('Failed to load last results', e); return []; }
+}
+function mergeLastResultsIntoSeen(){
+  const last = loadLastResults();
+  let added = 0;
+  for(const ln of last){
+    if(!globalSeen.has(ln)){
+      globalSeen.add(ln);
+      added++;
+    }
+  }
+  if(added > 0) saveSeenToStorage();
+}
+
+/* ----------------- provided.txt (shared) support ----------------- */
+async function fetchProvidedTxt(){
+  try{
+    const r = await fetch('provided.txt', {cache:'no-store'});
+    if(!r.ok) {
+      return false;
+    }
+    const txt = await r.text();
+    const lines = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    let added = 0;
+    for(const ln of lines){
+      if(!globalSeen.has(ln)){
+        globalSeen.add(ln);
+        added++;
+      }
+    }
+    if(added > 0) saveSeenToStorage();
+    return true;
+  }catch(e){
+    console.warn('Failed to fetch provided.txt', e);
+    return false;
+  }
+}
+
+/* ----------------- Upload provided (best-effort) ----------------- */
+async function uploadProvidedLines(lines){
+  try{
+    const r = await fetch('provided_append', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ lines })
+    });
+    if(!r.ok) throw new Error('status ' + r.status);
+    return true;
+  }catch(e){
+    console.warn('Upload provided failed', e);
+    return false;
+  }
+}
+
+/* ----------------- Chunked reading helpers ----------------- */
+async function readFileInChunks(file, onChunk){
+  const chunkSize = 1024 * 1024;
+  let offset = 0, index = 0;
+  while(offset < file.size){
+    const slice = file.slice(offset, offset + chunkSize);
+    const text = await slice.text();
+    await onChunk(text, ++index);
+    offset += chunkSize;
+    await new Promise(r=>setTimeout(r, 1));
+  }
+  await onChunk('', ++index);
+}
+
+async function fetchLogsAndProcess(onChunk){
+  const resp = await fetch('logs.txt', {cache: "no-store"});
+  if(!resp.ok) throw new Error('Could not fetch logs.txt ('+resp.status+')');
+  if(resp.body && resp.body.getReader){
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let done = false, chunkIndex = 0;
+    while(!done){
+      const {value, done: d} = await reader.read();
+      done = d;
+      const text = value ? decoder.decode(value, {stream: !done}) : '';
+      await onChunk(text, ++chunkIndex);
+    }
+    await onChunk('', ++chunkIndex);
+  } else {
+    const text = await resp.text();
+    await onChunk(text, 1);
+    await onChunk('', 2);
+  }
+}
+
+/* ----------------- Custom keywords persistence & rendering ----------------- */
+function loadCustomKeywords(){
+  try{
+    const raw = localStorage.getItem(CUSTOM_KW_KEY);
+    if(!raw) return [];
+    const arr = JSON.parse(raw);
+    if(!Array.isArray(arr)) return [];
+    return arr.map(s => String(s).trim()).filter(Boolean);
+  }catch(e){ console.warn('Failed to read custom keywords', e); return []; }
+}
+function saveCustomKeywords(arr){
+  try{
+    localStorage.setItem(CUSTOM_KW_KEY, JSON.stringify(arr));
+  }catch(e){ console.warn('Failed to save custom keywords', e); }
+}
+function renderCustomKeywords(){
+  const stored = loadCustomKeywords();
+  const existingCustom = Array.from(els.kwRow.querySelectorAll('label[data-custom]'));
+  existingCustom.forEach(n => n.remove());
+  for(const kw of stored){
+    addKeywordChipToDom(kw, true);
+  }
+}
+function addKeywordChipToDom(kw, checked){
+  const label = document.createElement('label');
+  label.setAttribute('data-custom','1');
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.className = 'kw';
+  input.value = kw;
+  input.checked = !!checked;
+  input.style.marginRight = '6px';
+  const text = document.createTextNode(' ' + kw);
+  const removeBtn = document.createElement('span');
+  removeBtn.className = 'removeKw';
+  removeBtn.title = 'Remove';
+  removeBtn.textContent = '✕';
+  label.appendChild(input);
+  label.appendChild(text);
+  label.appendChild(removeBtn);
+  els.kwRow.appendChild(label);
+  return label;
+}
+function addCustomKeyword(kwRaw){
+  const kw = String(kwRaw || '').trim();
+  if(!kw) { notifyOverlay('Enter a non-empty keyword'); return; }
+  const existing = Array.from(document.querySelectorAll('.kw')).map(n => n.value.toLowerCase());
+  if(existing.includes(kw.toLowerCase())){
+    notifyOverlay('Keyword already exists');
+    return;
+  }
+  const stored = loadCustomKeywords();
+  stored.push(kw);
+  saveCustomKeywords(stored);
+  addKeywordChipToDom(kw, true);
+  els.customKwInput.value = '';
+}
+
+/* Handle remove clicks (event delegation) */
+els.kwRow.addEventListener('click', (ev) => {
+  const rem = ev.target.closest('.removeKw');
+  if(!rem) return;
+  const label = rem.closest('label');
+  if(!label) return;
+  if(!label.hasAttribute('data-custom')) {
+    notifyOverlay('Built-in keywords cannot be removed');
+    return;
+  }
+  const input = label.querySelector('input.kw');
+  const val = input ? input.value.trim() : null;
+  label.remove();
+  if(val){
+    const stored = loadCustomKeywords().filter(s => s.toLowerCase() !== val.toLowerCase());
+    saveCustomKeywords(stored);
+  }
+});
+
+/* ----------------- Utility to get up-to-date keyword checkboxes ----------------- */
+function getKwCheckboxes(){
+  return Array.from(document.querySelectorAll('.kw'));
+}
+
+/* ----------------- Main search flow ----------------- */
+async function performSearch(){
+  if(searching) return;
+  searching = true;
+  setStatus('starting search...');
+  els.searchBtn.disabled = true;
+  if(els.searchLoader) els.searchLoader.classList.remove('hidden');
+
+  stopRequested = false;
+  sessionAppended = new Set();
+  resultsSet = [];
+  const rawVal = Number(els.lineLimit.value) || settings.resultsPerSearch;
+  currentLimit = Math.max(1, Math.min(HARD_MAX_LINES, rawVal));
+  els.lineLimit.value = currentLimit;
+
+  if(!worker) createWorker();
+  worker.postMessage({cmd:'reset'});
+  clearResults();
+
+  const keywords = getKwCheckboxes().filter(cb => cb.checked).map(cb => cb.value.trim()).filter(Boolean);
+  const emailFilter = els.emailFilter.value;
+  const limit = currentLimit;
+
+  const onChunk = async (text, chunkIndex) => {
+    if(stopRequested) return;
+    worker.postMessage({
+      cmd: 'processChunk',
+      textChunk: text,
+      keywords,
+      emailFilter,
+      lineLimit: limit,
+      chunkIndex
+    });
+  };
+
+  try{
+    const file = els.fileInput.files && els.fileInput.files[0];
+    if(file){
+      await readFileInChunks(file, onChunk);
+    } else {
+      await fetchLogsAndProcess(onChunk);
+    }
+    setStatus('finishing...');
+    await new Promise(r=>setTimeout(r, 300));
+    if(resultsSet.length > limit){ resultsSet = resultsSet.slice(0, limit); }
+    els.resultsMeta.textContent = `${resultsSet.length} found (limited to ${limit})`;
+
+    // Save last results so refresh won't re-show them
+    saveLastResults();
+
+    // Optionally upload results to central provided list (best-effort)
+    if(settings.uploadProvidedOnFinish && resultsSet.length > 0){
+      const ok = await uploadProvidedLines(resultsSet);
+      if(ok) notifyOverlay('Marked results as provided (server accepted).');
+      else notifyOverlay('Marked locally as provided (server upload failed).');
+      // mark locally regardless
+      for(const ln of resultsSet){
+        globalSeen.add((ln||'').trim());
+      }
+      saveSeenToStorage();
+    }
+  }catch(err){
+    showError('Search failed: ' + (err && (err.message || err)));
+  }finally{
+    searching = false;
+    els.searchBtn.disabled = false;
+    if(els.searchLoader) els.searchLoader.classList.add('hidden');
+    setStatus('idle');
+    els.downloadBtn.disabled = (resultsSet.length===0);
+  }
+}
+
+/* ----------------- Download ----------------- */
+function downloadResults(){
+  if(resultsSet.length === 0) return;
+  const blob = new Blob([resultsSet.join('\n')], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  a.download = `Results[${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}].txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ----------------- Settings modal wiring ----------------- */
+function openSettingsModal(){
+  if(els.overlay && !els.overlay.classList.contains('hidden')) {
+    notifyOverlay('Unlock the app to change settings');
+    return;
+  }
+  els.settingsModal.classList.remove('hidden');
+  els.settingsModal.setAttribute('aria-hidden', 'false');
+  const first = els.settingTheme || els.settingResultsPerSearch;
+  if(first) first.focus();
+}
+function closeSettingsModal(){
+  els.settingsModal.classList.add('hidden');
+  els.settingsModal.setAttribute('aria-hidden', 'true');
+}
+
+els.openSettingsBtn.addEventListener('click', openSettingsModal);
+els.closeSettingsBtn.addEventListener('click', closeSettingsModal);
+els.settingsModal.addEventListener('click', (e) => { if(e.target === els.settingsModal) closeSettingsModal(); });
+window.addEventListener('keydown', (e) => { if(e.key === 'Escape') { if(!els.settingsModal.classList.contains('hidden')) closeSettingsModal(); } });
+
+els.settingTheme.addEventListener('change', (e) => { settings.theme = e.target.value; saveSettings(); });
+els.settingResultsPerSearch.addEventListener('change', (e) => {
+  const raw = Number(e.target.value) || DEFAULT_SETTINGS.resultsPerSearch;
+  const v = Math.max(1, Math.min(HARD_MAX_LINES, raw));
+  settings.resultsPerSearch = v;
+  els.lineLimit.value = v;
+  saveSettings();
+});
+els.settingAutoUnlock.addEventListener('change', (e) => { settings.autoUnlock = e.target.value === '1'; saveSettings(); });
+els.settingShowTimestamps.addEventListener('change', (e) => { settings.showTimestamps = e.target.value === '1'; saveSettings(); });
+if(els.settingUseSharedProvided) els.settingUseSharedProvided.addEventListener('change', (e) => { settings.useSharedProvided = e.target.value === '1'; saveSettings(); });
+if(els.settingUploadProvidedOnFinish) els.settingUploadProvidedOnFinish.addEventListener('change', (e) => { settings.uploadProvidedOnFinish = e.target.value === '1'; saveSettings(); });
+
+els.exportSettingsBtn.addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(settings, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'logs_search_settings.json'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+els.importSettingsBtn.addEventListener('click', () => { els.importSettingsInput.click(); });
+els.importSettingsInput.addEventListener('change', (ev) => {
+  const f = ev.target.files && ev.target.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{ const imported = JSON.parse(reader.result); settings = Object.assign({}, DEFAULT_SETTINGS, imported);
+      if(settings.resultsPerSearch && Number(settings.resultsPerSearch) > HARD_MAX_LINES) settings.resultsPerSearch = HARD_MAX_LINES;
+      saveSettings(); alert('Settings imported and applied.'); } catch(e){ alert('Invalid JSON file'); }
+  };
+  reader.readAsText(f);
+});
+els.resetSettingsBtn.addEventListener('click', () => { settings = Object.assign({}, DEFAULT_SETTINGS); saveSettings(); alert('Settings reset to defaults.'); });
+
+/* ----------------- Wiring UI events ----------------- */
+if (els.searchBtn) els.searchBtn.addEventListener('click', performSearch);
+if (els.downloadBtn) els.downloadBtn.addEventListener('click', downloadResults);
+if (els.clearProvidedBtn) els.clearProvidedBtn.addEventListener('click', () => { clearResults(); notifyOverlay('Cleared visible results (history preserved)'); });
+
+els.overlayInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') els.overlaySubmit.click(); });
+if(els.lineLimit){
+  els.lineLimit.addEventListener('input', (e) => {
+    const val = Number(e.target.value);
+    if(!isFinite(val) || val < 1) return;
+    if(val > HARD_MAX_LINES){
+      e.target.value = HARD_MAX_LINES;
+      notifyOverlay(`Line limit capped at ${HARD_MAX_LINES}`);
+    }
+  });
+}
+
+/* ----------------- Custom keyword wiring ----------------- */
+els.addKwBtn.addEventListener('click', ()=> addCustomKeyword(els.customKwInput.value));
+els.customKwInput.addEventListener('keydown', (e)=> { if(e.key === 'Enter') { e.preventDefault(); addCustomKeyword(els.customKwInput.value); } });
+
+window.addEventListener('error', (ev) => { console.error('Window error:', ev.error || ev.message); showError(String(ev.message || ev.error)); });
+
+/* ----------------- New UI buttons (injected) ----------------- */
+(function injectButtons(){
+  try{
+    // button to sync provided.txt from server
+    const btn = document.createElement('button');
+    btn.id = 'reloadProvidedBtn';
+    btn.className = 'btn-ghost';
+    btn.textContent = 'Sync provided';
+    btn.title = 'Fetch provided.txt and add its lines to ignore list';
+    const parent = els.reloadKeysBtn && els.reloadKeysBtn.parentNode;
+    if(parent) parent.appendChild(btn);
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const ok = await fetchProvidedTxt();
+      notifyOverlay(ok ? 'Sync complete' : 'No provided.txt found');
+      btn.disabled = false;
     });
 
-    // optional: fetch provided.txt and show count
-    document.getElementById('syncProvided').addEventListener('click', async ()=>{
-      try{
-        const r = await fetch('/provided.txt', {cache:'no-store'});
-        if(!r.ok) { alert('No provided.txt'); return; }
-        const txt = await r.text();
-        const lines = txt.split(/\\r?\\n/).map(s=>s.trim()).filter(Boolean);
-        alert('Provided has ' + lines.length + ' lines');
-      }catch(e){ alert('Error: '+e.message); }
-    });
-  </script>
+    // button to mark visible results as provided (local + server attempt)
+    const controls = document.querySelector('#leftPanel .controls') || document.querySelector('.controls');
+    if(controls){
+      const markBtn = document.createElement('button');
+      markBtn.id = 'markProvidedBtn';
+      markBtn.className = 'btn-ghost';
+      markBtn.textContent = 'Mark results as provided';
+      markBtn.title = 'Mark current visible results as provided (persists locally; attempts server upload)';
+      controls.appendChild(markBtn);
+      markBtn.addEventListener('click', async ()=>{
+        if(resultsSet.length === 0){ notifyOverlay('No results to mark'); return; }
+        markBtn.disabled = true;
+        // add to global seen and persist
+        for(const ln of resultsSet){
+          globalSeen.add((ln||'').trim());
+        }
+        saveSeenToStorage();
+        saveLastResults();
+        // attempt upload
+        const ok = await uploadProvidedLines(resultsSet);
+        notifyOverlay(ok ? 'Marked results as provided (server accepted)' : 'Marked locally as provided (server upload failed)');
+        markBtn.disabled = false;
+      });
+    }
+  }catch(e){ console.warn('Failed to inject buttons', e); }
+})();
+
+/* ----------------- Init ----------------- */
+function initUIFromSettings(){
+  if(settings.resultsPerSearch && Number(settings.resultsPerSearch) > HARD_MAX_LINES){
+    settings.resultsPerSearch = HARD_MAX_LINES;
+  }
+  if(els.settingTheme) els.settingTheme.value = settings.theme;
+  if(els.settingResultsPerSearch) els.settingResultsPerSearch.value = settings.resultsPerSearch;
+  if(els.settingAutoUnlock) els.settingAutoUnlock.value = settings.autoUnlock ? '1' : '0';
+  if(els.settingShowTimestamps) els.settingShowTimestamps.value = settings.showTimestamps ? '1' : '0';
+  if(els.lineLimit) els.lineLimit.value = settings.resultsPerSearch;
+  applyTheme();
+}
+
+/* loads persistent seen and optionally fetches provided.txt */
+async function initSeenAndProvided(){
+  const persisted = loadSeenFromStorage();
+  for(const s of persisted) globalSeen.add(s);
+  if(settings.useSharedProvided){
+    await fetchProvidedTxt().catch(e => console.warn(e));
+  }
+}
+
+/* ----------------- Keys auto init (unchanged) ----------------- */
+async function initKeysAuto(){
+  await loadKeysTxt().catch(()=>{});
+  const saved = localStorage.getItem('unlockedKey_v1');
+  if(saved){
+    await loadKeysTxt().catch(()=>{});
+    if(keysList.length === 0){
+      if(settings.autoUnlock){
+        finishUnlock(saved, {});
+        return;
+      }
+    } else {
+      const found = keysList.find(e => e.key === saved || e.key.replace(/^[\uFEFF'"]+|[\uFEFF'"]+$/g,'').trim() === saved);
+      if(found && !isExpired(found) && settings.autoUnlock){
+        finishUnlock(saved, {daysRemaining: found.expires ? Math.ceil((found.expires.getTime()-Date.now())/(1000*60*60*24)) : null});
+        return;
+      }
+    }
+  }
+  els.overlay.classList.remove('hidden');
+  els.overlay.style.display = 'flex';
+  els.openSettingsBtn.disabled = true;
+  els.overlayInput.focus();
+}
+
+// save session seen on unload (covers quick refresh)
+window.addEventListener('beforeunload', () => {
+  try{
+    for(const ln of sessionAppended){
+      globalSeen.add((ln||'').trim());
+    }
+    saveSeenToStorage();
+    saveLastResults();
+  }catch(e){ /* ignore */ }
+});
+
+// initial setup
+initUIFromSettings();
+createWorker();
+renderCustomKeywords();
+// load persistent seen + provided.txt + merge last-results (so refresh won't re-show same lines)
+initSeenAndProvided()
+  .then(() => mergeLastResultsIntoSeen())
+  .catch(e => console.warn(e));
+initKeysAuto().catch(e => { console.warn(e); });
+
+</script>
 </body>
-  </html>
+          </html>
